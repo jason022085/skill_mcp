@@ -7,8 +7,6 @@ from __future__ import annotations
 
 from typing import Optional
 
-from mcp.types import Tool
-
 from ..tools.base import BaseTool
 from ..utils.logging import get_logger
 from .exceptions import ToolNotFoundError
@@ -75,14 +73,6 @@ class ToolRegistry:
         if tool is None:
             raise ToolNotFoundError(name)
         return tool
-
-    def list_tools(self) -> list[Tool]:
-        """Get MCP Tool definitions for all registered tools.
-
-        Returns:
-            List of MCP Tool objects.
-        """
-        return [tool.to_mcp_tool() for tool in self._tools.values()]
 
     def names(self) -> list[str]:
         """Get all registered tool names.

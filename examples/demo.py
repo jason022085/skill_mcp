@@ -16,10 +16,12 @@ import json
 import logging
 import os
 import sys
+from contextlib import AsyncExitStack
 from pathlib import Path
 from typing import Any
 
 from mcp import ClientSession, StdioServerParameters
+from mcp.client.sse import sse_client
 from mcp.client.stdio import stdio_client
 from openai import AsyncOpenAI
 
@@ -171,10 +173,21 @@ def parse_args() -> argparse.Namespace:
     )
 
     parser.add_argument(
+        "--url",
+        type=str,
+        help="遠端 MCP Server 的 SSE 端點 (例如 http://localhost:8000/sse)。若指定此項，則透過 SSE 連線。",
+    )
+
+    parser.add_argument(
+        "-H", "--header",
+        action="append",
+        help="自訂 HTTP Header (例如 'Authorization: Bearer YOUR_TOKEN')，可多次使用",
+    )
+
+    parser.add_argument(
         "--skills-dir",
         type=Path,
-        required=True,
-        help="技能（tools）所在目录",
+        help="本地 stdio 模式下的技能（tools）所在目錄",
     )
 
     parser.add_argument(
@@ -216,11 +229,14 @@ async def run(args: argparse.Namespace):
         Console.error("缺少环境变量 OPENAI_API_KEY")
         sys.exit(1)
 
-    if not args.skills_dir.exists():
-        Console.error(f"技能目录不存在: {args.skills_dir}")
-        sys.exit(1)
-
-    args.workspace.mkdir(parents=True, exist_ok=True)
+    if not args.url:
+        if not args.skills_dir:
+            Console.error("本地模式下必須提供 --skills-dir (或使用 --url 連線遠端)")
+            sys.exit(1)
+        if not args.skills_dir.exists():
+            Console.error(f"技能目录不存在: {args.skills_dir}")
+            sys.exit(1)
+        args.workspace.mkdir(parents=True, exist_ok=True)
 
     # OpenAI Client
     openai_client = AsyncOpenAI(
@@ -228,62 +244,78 @@ async def run(args: argparse.Namespace):
         base_url=os.environ.get("OPENAI_BASE_URL"),
     )
 
-    # MCP Server（stdio 模式）
-    server_params = StdioServerParameters(
-        command="python",
-        args=[
-            "-m",
-            "skill_mcp_server",
-            "--skills-dir",
-            str(args.skills_dir.resolve()),
-            "--workspace",
-            str(args.workspace.resolve()),
-        ],
-        env={**os.environ, "SKILL_MCP_LOG_LEVEL": "SILENT"},
-    )
+    # 解析自訂 Headers
+    headers = {}
+    if args.header:
+        for h in args.header:
+            if ":" in h:
+                k, v = h.split(":", 1)
+                headers[k.strip()] = v.strip()
+            else:
+                Console.error(f"無效的 Header 格式: {h} (應為 'Key: Value')")
+                sys.exit(1)
 
-    async with stdio_client(server_params) as (read, write):
-        async with ClientSession(read, write) as session:
-            await session.initialize()
+    async with AsyncExitStack() as stack:
+        if args.url:
+            Console.info(f"Connecting to remote MCP server via SSE: {args.url}")
+            read, write = await stack.enter_async_context(sse_client(args.url, headers=headers or None))
+        else:
+            Console.info("Starting local MCP server via stdio...")
+            server_params = StdioServerParameters(
+                command="python",
+                args=[
+                    "-m",
+                    "skill_mcp_server",
+                    "--skills-dir",
+                    str(args.skills_dir.resolve()),
+                    "--workspace",
+                    str(args.workspace.resolve()),
+                ],
+                env={**os.environ, "SKILL_MCP_LOG_LEVEL": "SILENT"},
+            )
+            read, write = await stack.enter_async_context(stdio_client(server_params))
 
-            client = MCPClient(openai_client, session, args.model)
-            await client.load_tools()
+        session = await stack.enter_async_context(ClientSession(read, write))
+        await session.initialize()
 
-            # 欢迎信息
-            print()
-            print(f"{Console.BOLD}Skill MCP Client{Console.RESET}")
-            print(f"{Console.DIM}输入问题开始对话，/help 查看命令{Console.RESET}")
-            print()
+        client = MCPClient(openai_client, session, args.model)
+        await client.load_tools()
 
-            while True:
-                try:
-                    user_input = input(Console.prompt()).strip()
-                    if not user_input:
-                        continue
+        # 欢迎信息
+        print()
+        print(f"{Console.BOLD}Skill MCP Client{Console.RESET}")
+        print(f"{Console.DIM}输入问题开始对话，/help 查看命令{Console.RESET}")
+        print()
 
-                    if user_input in ("/quit", "/exit", "/q"):
-                        break
+        while True:
+            try:
+                user_input = input(Console.prompt()).strip()
+                if not user_input:
+                    continue
 
-                    if user_input == "/clear":
-                        client.clear()
-                        Console.info("对话已清空")
-                        continue
-
-                    if user_input == "/help":
-                        print("/clear  清空对话")
-                        print("/quit   退出程序")
-                        continue
-
-                    reply = await client.chat(user_input)
-                    print()
-                    print(reply)
-                    print()
-
-                except (KeyboardInterrupt, EOFError):
-                    print()
+                if user_input in ("/quit", "/exit", "/q"):
                     break
-                except Exception as e:
-                    Console.error(str(e))
+
+                if user_input == "/clear":
+                    client.clear()
+                    Console.info("对话已清空")
+                    continue
+
+                if user_input == "/help":
+                    print("/clear  清空对话")
+                    print("/quit   退出程序")
+                    continue
+
+                reply = await client.chat(user_input)
+                print()
+                print(reply)
+                print()
+
+            except (KeyboardInterrupt, EOFError):
+                print()
+                break
+            except Exception as e:
+                Console.error(str(e))
 
     Console.info("Bye 👋")
 

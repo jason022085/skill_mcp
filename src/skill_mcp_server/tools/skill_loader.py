@@ -61,19 +61,6 @@ class SkillLoaderTool(BaseTool):
             f"<available_skills>\n{skill_list}\n</available_skills>"
         )
 
-    @property
-    def input_schema(self) -> dict[str, Any]:
-        return {
-            "type": "object",
-            "properties": {
-                "name": {
-                    "type": "string",
-                    "description": "The name of the skill to load",
-                }
-            },
-            "required": ["name"],
-        }
-
     def execute(self, name: str = "", **kwargs: Any) -> str:
         """Load a skill by name.
 

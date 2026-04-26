@@ -59,28 +59,6 @@ class ScriptExecutorTool(BaseTool):
             "Scripts are executed in the workspace directory."
         )
 
-    @property
-    def input_schema(self) -> dict[str, Any]:
-        return {
-            "type": "object",
-            "properties": {
-                "skill_name": {
-                    "type": "string",
-                    "description": "Name of the skill that owns the script",
-                },
-                "script_path": {
-                    "type": "string",
-                    "description": "Relative path to the script (e.g., 'scripts/init.py')",
-                },
-                "args": {
-                    "type": "string",
-                    "description": "Command-line arguments to pass to the script",
-                    "default": "",
-                },
-            },
-            "required": ["skill_name", "script_path"],
-        }
-
     def execute(
         self,
         skill_name: str = "",

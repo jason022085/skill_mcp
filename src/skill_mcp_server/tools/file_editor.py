@@ -49,32 +49,6 @@ class FileEditorTool(BaseTool):
             "The old_string must exist in the file and should be unique."
         )
 
-    @property
-    def input_schema(self) -> dict[str, Any]:
-        return {
-            "type": "object",
-            "properties": {
-                "file_path": {
-                    "type": "string",
-                    "description": "Path to the file, relative to the workspace directory",
-                },
-                "old_string": {
-                    "type": "string",
-                    "description": "Text to replace (must exist and be unique in the file)",
-                },
-                "new_string": {
-                    "type": "string",
-                    "description": "Replacement text",
-                },
-                "replace_all": {
-                    "type": "boolean",
-                    "description": "Replace all occurrences instead of just the first",
-                    "default": False,
-                },
-            },
-            "required": ["file_path", "old_string", "new_string"],
-        }
-
     def execute(
         self,
         file_path: str = "",

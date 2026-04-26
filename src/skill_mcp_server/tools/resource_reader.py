@@ -51,23 +51,6 @@ class ResourceReaderTool(BaseTool):
             "(e.g., 'assets/template.md', 'references/api_reference.md')."
         )
 
-    @property
-    def input_schema(self) -> dict[str, Any]:
-        return {
-            "type": "object",
-            "properties": {
-                "skill_name": {
-                    "type": "string",
-                    "description": "Name of the skill that owns the resource",
-                },
-                "resource_path": {
-                    "type": "string",
-                    "description": "Relative path to the resource file (e.g., 'assets/template.md')",
-                },
-            },
-            "required": ["skill_name", "resource_path"],
-        }
-
     def execute(
         self,
         skill_name: str = "",

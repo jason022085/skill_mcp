@@ -47,14 +47,6 @@ class SkillListerTool(BaseTool):
             "Use this to discover what skills are available before loading one."
         )
 
-    @property
-    def input_schema(self) -> dict[str, Any]:
-        return {
-            "type": "object",
-            "properties": {},
-            "required": [],
-        }
-
     def execute(self, **kwargs: Any) -> str:
         """List all available skills.
 
