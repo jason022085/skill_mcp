@@ -56,6 +56,7 @@ If your Agent doesn't support Skills yet, this project can help you quickly inte
 - ⚡ **Zero-Code Integration**: Helps agents without native Skill support quickly access the Skill ecosystem
 - 📦 **Fully Compatible**: Supports `SKILL.md` format and `scripts/`, `references/` resource directories
 - 📂 **Workspace Isolation**: Supports `--workspace` parameter to specify where Skill output files are stored
+- 🌐 **Remote Connection Support**: Built-in HTTP/SSE server with API Key authentication, making it easy to create a shared team skill library
 - 🔄 **Hot Reload**: Add new skills without restarting the server
 - 🔒 **Secure by Design**: Path validation, sandboxed file operations
 
@@ -120,6 +121,37 @@ Add Skill MCP Server to your MCP client configuration. All MCP-compatible client
 
 - `--skills-dir`: Core parameter. Set to the root directory containing all Skill folders you want your agent to use.
 - `--workspace`: Important parameter. Specifies where Skill execution output files (code, reports, etc.) are saved.
+
+## 🎮 Interactive Demo
+
+The project includes a simple terminal MCP client (`examples/demo.py`) that lets you interactively test your Skills directly using OpenAI models.
+
+### Prerequisites
+```bash
+# Set your OpenAI API Key
+export OPENAI_API_KEY="your-api-key-here"
+```
+
+### Mode 1: Local Execution (Stdio Mode)
+This is the simplest way to test. It directly mounts a local skills directory and automatically starts the server in the background:
+```bash
+# Navigate to the examples directory
+cd examples
+
+# Run demo.py (specifying skills directory and optional workspace)
+python demo.py --skills-dir ./skills --workspace ../workspace
+```
+
+### Mode 2: Connect to Remote Server (SSE Mode)
+If you want to test connecting to a standalone Skill Server over the network:
+```bash
+# 1. In terminal 1, start the remote server with API Key authentication
+SKILL_MCP_API_KEY="my-secret-token" python -m skill_mcp_server
+
+# 2. In terminal 2, use demo.py to connect via URL with custom Headers
+cd examples
+python demo.py --url http://localhost:8000/sse -H "Authorization: Bearer my-secret-token"
+```
 
 ## 🛠️ Available Tools (MCP Tools)
 
