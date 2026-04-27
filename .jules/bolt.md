@@ -1,0 +1,3 @@
+## 2025-02-28 - Set operations for fast exclusion checking in Path parts
+**Learning:** Checking for excluded directories during path traversal (like in a scanner) using substring operations on stringified paths (`f"/{excluded}/" in str(path)`) is significantly slower (~3x slower) than using set intersection (`isdisjoint`) directly on the `path.parts` tuple. This is because string operations create an intermediate string and do multiple linear scans, whereas set intersection is highly optimized in CPython.
+**Action:** Always prefer using `set.isdisjoint()` when checking if any elements in an iterable (like `path.parts`) intersect with a known set of excluded items.
