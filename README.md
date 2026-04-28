@@ -145,8 +145,9 @@ python demo.py --skills-dir ./skills --workspace ../workspace
 ### Mode 2: Connect to Remote Server (SSE Mode)
 If you want to test connecting to a standalone Skill Server over the network:
 ```bash
-# 1. In terminal 1, start the remote server with API Key authentication
+# 1. In terminal 1, start the remote server with API Key authentication (Mac/Linux)
 SKILL_MCP_API_KEY="my-secret-token" python -m skill_mcp_server
+# For Windows PowerShell: $env:SKILL_MCP_API_KEY="my-secret-token"; python -m skill_mcp_server
 
 # 2. In terminal 2, use demo.py to connect via URL with custom Headers
 cd examples

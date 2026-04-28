@@ -145,8 +145,9 @@ python demo.py --skills-dir ./skills --workspace ../workspace
 ### 模式二：連接遠端伺服器 (SSE 模式)
 如果你想測試透過網路連接獨立運作的 Skill Server：
 ```bash
-# 1. 在第一個終端機啟動帶有 API Key 驗證的遠端 Server
+# 1. 在第一個終端機啟動帶有 API Key 驗證的遠端 Server (Mac/Linux)
 SKILL_MCP_API_KEY="my-secret-token" python -m skill_mcp_server
+# 若使用 Windows PowerShell 請執行：$env:SKILL_MCP_API_KEY="my-secret-token"; python -m skill_mcp_server
 
 # 2. 在第二個終端機使用 demo.py 透過 URL 與自訂 Header 連線
 cd examples
