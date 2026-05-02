@@ -9,7 +9,6 @@ import subprocess
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
 from ..config.defaults import SCRIPT_TIMEOUT
 
@@ -128,7 +127,7 @@ class BaseExecutor(ABC):
         self,
         script_path: Path,
         working_dir: Path,
-        args: Optional[list[str]] = None,
+        args: list[str] | None = None,
     ) -> ExecutionResult:
         """Execute a script.
 

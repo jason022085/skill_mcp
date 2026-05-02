@@ -2,6 +2,7 @@
 # Copyright (c) 2025
 # SPDX-License-Identifier: MIT
 """Skill MCP Server - Command Line Entry Point."""
+
 from __future__ import annotations
 
 # Early silent mode check - MUST be before ANY other imports

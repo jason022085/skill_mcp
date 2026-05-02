@@ -5,13 +5,13 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Any, Optional
-
 import asyncio
 import os
-from fastmcp import FastMCP
+from pathlib import Path
+from typing import Any
+
 import uvicorn
+from fastmcp import FastMCP
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
@@ -28,7 +28,6 @@ from ..tools.script_executor import ScriptExecutorTool
 from ..tools.skill_lister import SkillListerTool
 from ..tools.skill_loader import SkillLoaderTool
 from ..utils.logging import get_logger, setup_logging
-from .exceptions import ToolNotFoundError
 from .registry import ToolRegistry
 
 logger = get_logger("core.server")
@@ -148,7 +147,7 @@ class SkillMCPServer:
         self.mcp = FastMCP("skill-mcp-server")
 
         # 利用 FastMCP 以 Type Hints 來推導 Schema 的特性，宣告 Wrapper：
-        
+
         @self.mcp.tool(name=self.skill_loader.name, description=self.skill_loader.description)
         def skill(name: str) -> str:
             return self.skill_loader.execute(name=name)
@@ -162,7 +161,9 @@ class SkillMCPServer:
             return self.resource_reader.execute(skill_name=skill_name, resource_path=resource_path)
 
         @self.mcp.tool(name=self.script_executor.name, description=self.script_executor.description)
-        def skill_script(skill_name: str, script_name: str, args: Optional[dict[str, Any]] = None) -> str:
+        def skill_script(
+            skill_name: str, script_name: str, args: dict[str, Any] | None = None
+        ) -> str:
             execute_args = {"skill_name": skill_name, "script_name": script_name}
             if args is not None:
                 execute_args["args"] = args
@@ -191,11 +192,11 @@ class SkillMCPServer:
         # fastmcp.run() 為同步阻塞並有自己的 Event Loop，
         # 由於外部 __main__ 已使用 asyncio.run()，我們用 to_thread 避免 Event Loop 衝突
         await asyncio.to_thread(self.mcp.run, transport="stdio")
-        
+
     async def run_sse(self, host: str = "0.0.0.0", port: int = 8000) -> None:
         """Run the MCP server over HTTP/SSE."""
         logger.info(f"Starting Skill MCP Server (FastMCP SSE) on http://{host}:{port}...")
-        
+
         # Pre-load skills
         skills = self.skill_manager.all()
         logger.info(f"Loaded {len(skills)} skills: {[s.name for s in skills]}")
@@ -218,8 +219,8 @@ class SkillMCPServer:
 
 
 def create_server(
-    skills_dir: Optional[Path] = None,
-    workspace_dir: Optional[Path] = None,
+    skills_dir: Path | None = None,
+    workspace_dir: Path | None = None,
     verbose: bool = False,
 ) -> SkillMCPServer:
     """Create a configured SkillMCPServer instance.
