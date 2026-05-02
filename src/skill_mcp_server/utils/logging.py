@@ -8,7 +8,6 @@ from __future__ import annotations
 import logging
 import os
 import sys
-from typing import Optional
 
 # Default log format
 DEFAULT_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -22,7 +21,7 @@ LOG_LEVEL_ENV = "SKILL_MCP_LOG_LEVEL"
 
 def setup_logging(
     verbose: bool = False,
-    log_format: Optional[str] = None,
+    log_format: str | None = None,
 ) -> logging.Logger:
     """Configure logging for the application.
 
@@ -69,7 +68,7 @@ def setup_logging(
     return logger
 
 
-def get_logger(name: Optional[str] = None) -> logging.Logger:
+def get_logger(name: str | None = None) -> logging.Logger:
     """Get a logger instance.
 
     Args:
