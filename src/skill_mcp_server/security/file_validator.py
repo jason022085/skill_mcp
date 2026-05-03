@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
 
 from ..config.defaults import (
     ALLOWED_FILE_EXTENSIONS,
@@ -171,10 +170,10 @@ class FileValidator:
 
 
 def create_file_validator(
-    allowed_extensions: Optional[frozenset[str]] = None,
-    allowed_script_extensions: Optional[frozenset[str]] = None,
-    max_file_size: Optional[int] = None,
-    max_read_size: Optional[int] = None,
+    allowed_extensions: frozenset[str] | None = None,
+    allowed_script_extensions: frozenset[str] | None = None,
+    max_file_size: int | None = None,
+    max_read_size: int | None = None,
 ) -> FileValidator:
     """Factory function to create a FileValidator with custom settings.
 
