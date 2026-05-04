@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
 
 from ..config.defaults import RESOURCE_DIRS, SKILL_SCAN_PATTERNS
 from ..utils.logging import get_logger
@@ -27,8 +26,8 @@ class SkillManager:
 
     def __init__(
         self,
-        skill_dirs: Optional[list[Path]] = None,
-        scan_patterns: Optional[tuple[str, ...]] = None,
+        skill_dirs: list[Path] | None = None,
+        scan_patterns: tuple[str, ...] | None = None,
         resource_dirs: tuple[str, ...] = RESOURCE_DIRS,
     ) -> None:
         """Initialize the skill manager.
@@ -101,7 +100,7 @@ class SkillManager:
             except SkillParseError as e:
                 logger.error(f"Failed to parse skill: {e}")
 
-    def get(self, name: str) -> Optional[SkillInfo]:
+    def get(self, name: str) -> SkillInfo | None:
         """Get a skill by name.
 
         Args:
@@ -182,31 +181,49 @@ class SkillManager:
         Returns:
             Tuple of (resource_paths, script_paths).
         """
+        import os
+
         resources: list[str] = []
         scripts: list[str] = []
 
-        base_dir = skill.base_dir
+        base_dir_str = str(skill.base_dir)
 
+        # Bolt performance optimization: os.walk avoids the overhead of pathlib.Path
+        # instantiation for every file, making deep directory traversal much faster.
         # Scan resource directories
         for dir_name in self.resource_dirs:
-            resource_dir = base_dir / dir_name
+            resource_dir = skill.base_dir / dir_name
             if resource_dir.exists() and resource_dir.is_dir():
-                for file_path in resource_dir.rglob("*"):
-                    if file_path.is_file() and not file_path.name.startswith("."):
-                        rel_path = file_path.relative_to(base_dir)
-                        resources.append(str(rel_path))
+                for root, dirs, files in os.walk(str(resource_dir)):
+                    # remove hidden dirs to avoid traversing them
+                    dirs[:] = [d for d in dirs if not d.startswith(".")]
+                    for file_name in files:
+                        if not file_name.startswith("."):
+                            full_path = os.path.join(root, file_name)
+                            rel_path = os.path.relpath(full_path, base_dir_str)
+                            # Use forward slashes for cross-platform consistency
+                            resources.append(rel_path.replace(os.sep, "/"))
 
         # Scan scripts directory
-        scripts_dir = base_dir / "scripts"
+        scripts_dir = skill.base_dir / "scripts"
         if scripts_dir.exists() and scripts_dir.is_dir():
             from ..config.defaults import ALLOWED_SCRIPT_EXTENSIONS
 
-            for file_path in scripts_dir.rglob("*"):
-                if file_path.is_file() and not file_path.name.startswith("."):
-                    rel_path = file_path.relative_to(base_dir)
-                    if file_path.suffix.lower() in ALLOWED_SCRIPT_EXTENSIONS:
-                        scripts.append(str(rel_path))
-                    else:
-                        resources.append(str(rel_path))
+            for root, dirs, files in os.walk(str(scripts_dir)):
+                # remove hidden dirs to avoid traversing them
+                dirs[:] = [d for d in dirs if not d.startswith(".")]
+                for file_name in files:
+                    if not file_name.startswith("."):
+                        full_path = os.path.join(root, file_name)
+                        rel_path = os.path.relpath(full_path, base_dir_str)
+                        _, ext = os.path.splitext(file_name)
+
+                        # Use forward slashes for cross-platform consistency
+                        rel_path_str = rel_path.replace(os.sep, "/")
+
+                        if ext.lower() in ALLOWED_SCRIPT_EXTENSIONS:
+                            scripts.append(rel_path_str)
+                        else:
+                            resources.append(rel_path_str)
 
         return sorted(resources), sorted(scripts)
