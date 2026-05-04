@@ -5,8 +5,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 from ..tools.base import BaseTool
 from ..utils.logging import get_logger
 from .exceptions import ToolNotFoundError
@@ -46,7 +44,7 @@ class ToolRegistry:
         for tool in tools:
             self.register(tool)
 
-    def get(self, name: str) -> Optional[BaseTool]:
+    def get(self, name: str) -> BaseTool | None:
         """Get a tool by name.
 
         Args:

@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
 
 from ..utils.frontmatter import parse_frontmatter
 from ..utils.logging import get_logger
@@ -40,7 +39,7 @@ class SkillParser:
     def parse(
         self,
         path: Path,
-        base_dir: Optional[Path] = None,
+        base_dir: Path | None = None,
     ) -> SkillInfo:
         """Parse a SKILL.md file into a SkillInfo object.
 
@@ -129,8 +128,8 @@ class SkillParser:
     def _resolve_category(
         self,
         path: Path,
-        base_dir: Optional[Path],
-    ) -> Optional[str]:
+        base_dir: Path | None,
+    ) -> str | None:
         """Resolve the skill category from directory structure.
 
         Args:
