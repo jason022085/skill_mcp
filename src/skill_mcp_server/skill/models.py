@@ -7,7 +7,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
 
 
 @dataclass(frozen=True)
@@ -27,7 +26,7 @@ class SkillInfo:
     description: str
     location: Path
     content: str
-    category: Optional[str] = None
+    category: str | None = None
 
     @property
     def base_dir(self) -> Path:
@@ -62,7 +61,7 @@ class SkillInfo:
         """
         return (self.base_dir / "assets").is_dir()
 
-    def get_scripts_dir(self) -> Optional[Path]:
+    def get_scripts_dir(self) -> Path | None:
         """Get the scripts directory if it exists.
 
         Returns:
@@ -71,7 +70,7 @@ class SkillInfo:
         scripts_dir = self.base_dir / "scripts"
         return scripts_dir if scripts_dir.is_dir() else None
 
-    def get_references_dir(self) -> Optional[Path]:
+    def get_references_dir(self) -> Path | None:
         """Get the references directory if it exists.
 
         Returns:
@@ -80,7 +79,7 @@ class SkillInfo:
         refs_dir = self.base_dir / "references"
         return refs_dir if refs_dir.is_dir() else None
 
-    def get_assets_dir(self) -> Optional[Path]:
+    def get_assets_dir(self) -> Path | None:
         """Get the assets directory if it exists.
 
         Returns:
@@ -103,11 +102,11 @@ class SkillMetadata:
         tags: List of tags/keywords.
     """
 
-    name: Optional[str] = None
-    description: Optional[str] = None
-    license: Optional[str] = None
-    version: Optional[str] = None
-    author: Optional[str] = None
+    name: str | None = None
+    description: str | None = None
+    license: str | None = None
+    version: str | None = None
+    author: str | None = None
     tags: list[str] = field(default_factory=list)
 
     @classmethod
