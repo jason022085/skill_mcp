@@ -1,0 +1,3 @@
+## 2025-02-20 - Set Disjoint Check vs Substring Searching
+**Learning:** Utilizing string concatenations to check if a pathlib path is excluded (`f"/{excluded}/" in str(path)`) is linearly slow. When working with path filtering, doing an `isdisjoint` check against a set of `EXCLUDED_DIRS` with `path.parts` transforms a linear substring matching operation into a O(1) set lookup, speeding up checks substantially.
+**Action:** When working with path exclusions against a set of known directory names, check `set(path.parts).isdisjoint(excluded_set)` rather than converting the path to a string and performing substring matching.
