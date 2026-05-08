@@ -1,0 +1,3 @@
+## 2025-02-23 - Avoid pathlib.Path.rglob() in hot path directory traversal
+**Learning:** `pathlib.Path.rglob()` incurs significant performance overhead due to heavy object instantiation for each path element. When deeply traversing directories where the ultimate goal is only string path manipulation (such as file scanning and relative path calculation), `os.walk` combined with native `os.path` functions provides noticeably better performance.
+**Action:** Default to using `os.walk` and `os.path` string operations for deep directory traversals instead of `pathlib.Path.rglob()`, unless the specific object-oriented features of `Path` objects are genuinely required downstream.
