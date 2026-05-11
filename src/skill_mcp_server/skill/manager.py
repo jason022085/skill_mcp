@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Optional
 
@@ -186,27 +187,38 @@ class SkillManager:
         scripts: list[str] = []
 
         base_dir = skill.base_dir
+        base_dir_str = str(base_dir)
+
+        # Optimization: use os.walk instead of rglob for faster string-path generation.
+        # It avoids the overhead of instantiating heavy Path objects during traversal.
 
         # Scan resource directories
         for dir_name in self.resource_dirs:
             resource_dir = base_dir / dir_name
             if resource_dir.exists() and resource_dir.is_dir():
-                for file_path in resource_dir.rglob("*"):
-                    if file_path.is_file() and not file_path.name.startswith("."):
-                        rel_path = file_path.relative_to(base_dir)
-                        resources.append(str(rel_path))
+                resource_dir_str = str(resource_dir)
+                for root, _, files in os.walk(resource_dir_str):
+                    for file in files:
+                        if not file.startswith("."):
+                            file_path = os.path.join(root, file)
+                            rel_path = os.path.relpath(file_path, base_dir_str)
+                            resources.append(rel_path)
 
         # Scan scripts directory
         scripts_dir = base_dir / "scripts"
         if scripts_dir.exists() and scripts_dir.is_dir():
             from ..config.defaults import ALLOWED_SCRIPT_EXTENSIONS
 
-            for file_path in scripts_dir.rglob("*"):
-                if file_path.is_file() and not file_path.name.startswith("."):
-                    rel_path = file_path.relative_to(base_dir)
-                    if file_path.suffix.lower() in ALLOWED_SCRIPT_EXTENSIONS:
-                        scripts.append(str(rel_path))
-                    else:
-                        resources.append(str(rel_path))
+            scripts_dir_str = str(scripts_dir)
+            for root, _, files in os.walk(scripts_dir_str):
+                for file in files:
+                    if not file.startswith("."):
+                        file_path = os.path.join(root, file)
+                        rel_path = os.path.relpath(file_path, base_dir_str)
+                        _, ext = os.path.splitext(file)
+                        if ext.lower() in ALLOWED_SCRIPT_EXTENSIONS:
+                            scripts.append(rel_path)
+                        else:
+                            resources.append(rel_path)
 
         return sorted(resources), sorted(scripts)

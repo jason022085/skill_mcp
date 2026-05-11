@@ -1,0 +1,3 @@
+## 2023-10-27 - Fast String-based Directory Traversal in Python
+**Learning:** For deep file traversal where only string paths are needed, `os.walk` with manual string manipulation (like `os.path.relpath`) is significantly faster than `pathlib.Path.rglob`. The performance difference arises because `Path.rglob` instantiates heavy `Path` objects for every file it encounters, which creates a substantial bottleneck during extensive directory scanning.
+**Action:** When performing path-based filtering or deep directory scans where the final output relies solely on string paths, prefer `os.walk` and string functions over `pathlib` objects to avoid unnecessary instantiation overhead.
