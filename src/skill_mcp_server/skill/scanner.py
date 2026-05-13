@@ -5,8 +5,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Iterator
 
 from ..config.defaults import SKILL_SCAN_PATTERNS
 from ..utils.logging import get_logger
@@ -106,19 +106,16 @@ class SkillScanner:
         Returns:
             True if the path should be excluded.
         """
-        path_str = str(path)
+        parts = path.parts
 
-        # Check for excluded directories in path
-        for excluded in self.EXCLUDED_DIRS:
-            if f"/{excluded}/" in path_str or path_str.endswith(f"/{excluded}"):
-                return True
+        # O(1) set intersection check for excluded directories
+        # This optimization reduces time spent filtering deeply nested paths
+        if not self.EXCLUDED_DIRS.isdisjoint(parts):
+            return True
 
         # Skip hidden files/directories
-        for part in path.parts:
-            if part.startswith(".") and part not in (".", ".."):
-                return True
-
-        return False
+        # Using a generator with `any()` allows short-circuiting
+        return bool(any(part.startswith(".") and part not in (".", "..") for part in parts))
 
     def count_skills(self, directory: Path) -> int:
         """Count the number of skills in a directory.
