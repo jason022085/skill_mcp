@@ -1,0 +1,7 @@
+## 2025-05-15 - [Optimization: Replace `rglob` with `os.walk` in directory traversal]
+**Learning:** `Path.rglob` can be very slow in large directory trees because it creates `Path` objects for every file it visits, leading to significant overhead compared to plain string-based paths. For purely collecting string paths, especially inside nested structures like `node_modules` or `.venv`, this object instantiation causes a major bottleneck.
+**Action:** When performing deep directory traversals where the end goal is just to collect file paths as strings, prefer using `os.walk` with string paths over `pathlib.Path.rglob()`. Avoid using string slicing (e.g., `abs_path[len:]`) for computing relative paths; rely on robust standard library functions like `os.path.relpath`.
+
+## 2025-05-15 - [Optimization: O(1) set operations for path exclusion checks]
+**Learning:** In hot loops checking if paths should be excluded, iterating and checking substring matches using `f"/{excluded}/" in path_str` or similar string manipulations can be slow. Using `path.parts` and checking for disjoint sets (i.e. `set.isdisjoint(path.parts)`) provides O(1) subset checks and performs faster while still accurately parsing the exact directory components.
+**Action:** Prefer `set.isdisjoint` for excluding paths based on exact folder names instead of substring checks, as it prevents partial name matching bugs and significantly boosts performance in deep scans.
