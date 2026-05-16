@@ -5,8 +5,8 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
-from typing import Optional
 
 from ..config.defaults import RESOURCE_DIRS, SKILL_SCAN_PATTERNS
 from ..utils.logging import get_logger
@@ -27,8 +27,8 @@ class SkillManager:
 
     def __init__(
         self,
-        skill_dirs: Optional[list[Path]] = None,
-        scan_patterns: Optional[tuple[str, ...]] = None,
+        skill_dirs: list[Path] | None = None,
+        scan_patterns: tuple[str, ...] | None = None,
         resource_dirs: tuple[str, ...] = RESOURCE_DIRS,
     ) -> None:
         """Initialize the skill manager.
@@ -101,7 +101,7 @@ class SkillManager:
             except SkillParseError as e:
                 logger.error(f"Failed to parse skill: {e}")
 
-    def get(self, name: str) -> Optional[SkillInfo]:
+    def get(self, name: str) -> SkillInfo | None:
         """Get a skill by name.
 
         Args:
@@ -186,27 +186,38 @@ class SkillManager:
         scripts: list[str] = []
 
         base_dir = skill.base_dir
+        base_dir_str = str(base_dir)
 
         # Scan resource directories
         for dir_name in self.resource_dirs:
-            resource_dir = base_dir / dir_name
-            if resource_dir.exists() and resource_dir.is_dir():
-                for file_path in resource_dir.rglob("*"):
-                    if file_path.is_file() and not file_path.name.startswith("."):
-                        rel_path = file_path.relative_to(base_dir)
-                        resources.append(str(rel_path))
+            resource_dir_str = os.path.join(base_dir_str, dir_name)
+            if os.path.isdir(resource_dir_str):
+                for root, _, files in os.walk(resource_dir_str):
+                    for filename in files:
+                        if not filename.startswith("."):
+                            abs_path = os.path.join(root, filename)
+                            rel_path = os.path.relpath(abs_path, base_dir_str)
+                            # Convert backslashes to forward slashes for cross-platform consistency
+                            # if pathlib.Path was used, it would yield native path formatting.
+                            # Using pathlib.Path to ensure output is identical to original rglob implementation
+                            resources.append(str(Path(rel_path)))
 
         # Scan scripts directory
-        scripts_dir = base_dir / "scripts"
-        if scripts_dir.exists() and scripts_dir.is_dir():
+        scripts_dir_str = os.path.join(base_dir_str, "scripts")
+        if os.path.isdir(scripts_dir_str):
             from ..config.defaults import ALLOWED_SCRIPT_EXTENSIONS
 
-            for file_path in scripts_dir.rglob("*"):
-                if file_path.is_file() and not file_path.name.startswith("."):
-                    rel_path = file_path.relative_to(base_dir)
-                    if file_path.suffix.lower() in ALLOWED_SCRIPT_EXTENSIONS:
-                        scripts.append(str(rel_path))
-                    else:
-                        resources.append(str(rel_path))
+            for root, _, files in os.walk(scripts_dir_str):
+                for filename in files:
+                    if not filename.startswith("."):
+                        abs_path = os.path.join(root, filename)
+                        rel_path = os.path.relpath(abs_path, base_dir_str)
+                        rel_path_unix = rel_path.replace(os.sep, '/')
+
+                        _, ext = os.path.splitext(filename)
+                        if ext.lower() in ALLOWED_SCRIPT_EXTENSIONS:
+                            scripts.append(rel_path_unix)
+                        else:
+                            resources.append(rel_path_unix)
 
         return sorted(resources), sorted(scripts)
