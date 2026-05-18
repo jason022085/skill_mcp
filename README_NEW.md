@@ -126,6 +126,12 @@ version: 1.0.0
 
 *(上述 Markdown 頂部的 YAML Frontmatter 雖然在新的 FastMCP 架構中不一定強求，但保留可用作技能中繼資料的擴充使用。)*
 
+**禁用特定工具 (提高安全性)**：
+```bash
+# 禁用寫入與編輯工具，僅保留讀取與腳本執行
+python new_skill_server.py --disable-write --disable-edit
+```
+
 ---
 
 ## ⚙️ 環境變數與進階設定
@@ -134,4 +140,6 @@ version: 1.0.0
 
 - `SKILL_MCP_SKILLS_DIR`: 設定技能的根目錄路徑。
 - `SKILL_MCP_WORKSPACE_DIR`: 設定工作區的路徑。
+- `SKILL_MCP_ENABLE_FILE_WRITE`: 是否啟用 `file_write` 工具 (true/false, 預設 true)。
+- `SKILL_MCP_ENABLE_FILE_EDIT`: 是否啟用 `file_edit` 工具 (true/false, 預設 true)。
 - `SKILL_MCP_LOG_LEVEL`: 設定日誌層級 (DEBUG, INFO, WARNING, ERROR, CRITICAL)。若設為 `SILENT`，將完全關閉日誌輸出，這在某些嚴格依賴 Stdio 乾淨傳輸的環境中非常有用。
