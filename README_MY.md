@@ -2,7 +2,7 @@
 
 這是一個基於 [FastMCP](https://gofastmcp.com/) 構建的 Model Context Protocol (MCP) 伺服器，旨在將「技能」（包含指令說明與自動化腳本的本地資料夾）無縫整合至 AI 代理（如 Claude, Cursor 等支援 MCP 的工具）的工作流中。
 
-本專案經過重構，將原本的多檔案架構濃縮為單一檔案 `my_skill_server.py`，大幅降低了部署與遷移的門檻，同時引入了 FastMCP 原生的 `SkillsDirectoryProvider`，讓技能的註冊與發現更加自動化且標準化。
+本專案經過重構，將原本的多檔案架構濃縮為單一檔案 `new_skill_server.py`，大幅降低了部署與遷移的門檻，同時引入了 FastMCP 原生的 `SkillsDirectoryProvider`，讓技能的註冊與發現更加自動化且標準化。
 
 ---
 
@@ -44,7 +44,7 @@ pip install fastmcp pydantic
 
 ```text
 .
-├── my_skill_server.py     # 主程式
+├── new_skill_server.py     # 主程式
 ├── skills/                # 放置所有技能的目錄
 │   └── data-analyzer/     # 一個名為 data-analyzer 的技能
 │       ├── SKILL.md       # 技能的指令與系統提示詞
@@ -57,12 +57,12 @@ pip install fastmcp pydantic
 
 **預設啟動（Stdio 模式，適合 Cursor / Claude Desktop 直接掛載）**：
 ```bash
-python my_skill_server.py
+python new_skill_server.py
 ```
 
 **自訂路徑啟動**：
 ```bash
-python my_skill_server.py --skills-dir /path/to/my/skills --workspace /path/to/my/workspace
+python new_skill_server.py --skills-dir /path/to/my/skills --workspace /path/to/my/workspace
 ```
 
 ---
@@ -73,13 +73,13 @@ python my_skill_server.py --skills-dir /path/to/my/skills --workspace /path/to/m
 
 ### 1. `skill_script` (執行技能腳本)
 在安全隔離的環境下執行特定技能的腳本，並回傳完整的標準輸出與錯誤日誌供 AI 解析。
-- **參數 (`ScriptRunRequest`)**:
+- **參數 (`RunSkillScriptSchema`)**:
   - `skill_name` (string, 必填): 技能目錄的名稱，例如 `'data-analyzer'`。絕對不可包含路徑符號 (`/`, `\`, `..`)。
-  - `script_name` (string, 必填): 要執行的腳本檔案名稱（預設 `'script.py'`），必須位於該技能目錄下，例如 `'scripts/main.py'`。
+  - `file_path` (string, 必填): 要執行的腳本檔案名稱（預設 `'script.py'`），必須位於該技能目錄下，例如 `'scripts/main.py'`。
   - `env_vars` (dict, 可選): 執行腳本前注入的系統環境變數。例如: `{'NODE_ENV': 'production', 'API_KEY': '123'}`。
   - `optional_args` (dict, 可選): 可選參數與旗標。鍵名必須以破折號開頭。範例: `{'-lah': True, '--name': 'test.txt', '--port': 8080}`。
   - `positional_args` (list, 可選): 位置參數。嚴格按照順序傳入。例如: `['input.csv', 'output.json']`。
-  - `timeout_seconds` (integer, 可選): 執行超時限制 (5~300秒)，預設 30 秒。
+  - `timeout` (integer, 可選): 執行超時限制 (5~300秒)，預設 30 秒。
 
 ### 2. `file_read` (讀取工作區檔案)
 讀取 `workspace/` 目錄下的指定檔案。

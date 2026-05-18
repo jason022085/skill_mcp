@@ -154,6 +154,8 @@ class Settings:
     skill_filename: str = SKILL_FILENAME
     skill_scan_patterns: tuple[str, ...] = SKILL_SCAN_PATTERNS
     verbose: bool = False
+    enable_file_write: bool = True
+    enable_file_edit: bool = True
 
     def __post_init__(self) -> None:
         if isinstance(self.skills_dir, str): self.skills_dir = Path(self.skills_dir)
@@ -166,22 +168,39 @@ class Settings:
         self.workspace_dir.mkdir(parents=True, exist_ok=True)
 
     @classmethod
-    def from_args(cls, skills_dir: Optional[Path] = None, workspace_dir: Optional[Path] = None, verbose: bool = False) -> Settings:
-        kwargs: dict = {"verbose": verbose}
+    def from_args(cls, skills_dir: Optional[Path] = None, workspace_dir: Optional[Path] = None, 
+                  verbose: bool = False, enable_file_write: bool = True, enable_file_edit: bool = True) -> Settings:
+        kwargs: dict = {
+            "verbose": verbose,
+            "enable_file_write": enable_file_write,
+            "enable_file_edit": enable_file_edit
+        }
         if skills_dir is not None: kwargs["skills_dir"] = skills_dir
         if workspace_dir is not None: kwargs["workspace_dir"] = workspace_dir
         return cls(**kwargs)
 
-def load_config(skills_dir: Optional[Path] = None, workspace_dir: Optional[Path] = None, verbose: bool = False) -> Settings:
+def load_config(skills_dir: Optional[Path] = None, workspace_dir: Optional[Path] = None, 
+                verbose: bool = False, enable_file_write: Optional[bool] = None, 
+                enable_file_edit: Optional[bool] = None) -> Settings:
     env_skills_dir = os.environ.get("SKILL_MCP_SKILLS_DIR")
     env_workspace_dir = os.environ.get("SKILL_MCP_WORKSPACE_DIR")
     env_verbose = os.environ.get("SKILL_MCP_VERBOSE", "").lower() in ("1", "true", "yes")
+    env_enable_write = os.environ.get("SKILL_MCP_ENABLE_FILE_WRITE", "true").lower() in ("1", "true", "yes")
+    env_enable_edit = os.environ.get("SKILL_MCP_ENABLE_FILE_EDIT", "true").lower() in ("1", "true", "yes")
     
     final_skills_dir = skills_dir or (Path(env_skills_dir) if env_skills_dir else None)
     final_workspace_dir = workspace_dir or (Path(env_workspace_dir) if env_workspace_dir else None)
     final_verbose = verbose or env_verbose
+    final_enable_write = enable_file_write if enable_file_write is not None else env_enable_write
+    final_enable_edit = enable_file_edit if enable_file_edit is not None else env_enable_edit
     
-    return Settings.from_args(skills_dir=final_skills_dir, workspace_dir=final_workspace_dir, verbose=final_verbose)
+    return Settings.from_args(
+        skills_dir=final_skills_dir, 
+        workspace_dir=final_workspace_dir, 
+        verbose=final_verbose,
+        enable_file_write=final_enable_write,
+        enable_file_edit=final_enable_edit
+    )
 
 # --- Security ---
 
@@ -423,15 +442,15 @@ class FileEditorTool(BaseTool):
             return f"File {file_path} bulk-edited successfully"
         except Exception as e: return f"Error: {e}"
 
-class ScriptRunRequest(BaseModel):
+class RunSkillScriptSchema(BaseModel):
     skill_name: str = Field(..., description="技能目錄的名稱，例如 'data-analyzer'")
-    script_name: str = Field(default="script.py", description="要執行的腳本檔案名稱 (必須位於該技能目錄下)，例如 'main.py'、'build.sh'。預設為 'script.py'。")
+    file_path: str = Field(default="script.py", description="要執行的腳本檔案名稱 (必須位於該技能目錄下)，例如 'main.py'、'build.sh'。預設為 'script.py'。")
     env_vars: Dict[str, str] = Field(default_factory=dict, description="執行腳本前注入的系統環境變數。例如: {'NODE_ENV': 'production', 'API_KEY': '123'}")
     optional_args: Dict[str, Any] = Field(default_factory=dict, description="可選參數與旗標。鍵名(Key)必須以破折號開頭。請完全依照標準指令的寫法傳遞，絕對不要自行拆解字元。正確範例: {'-lah': True, '-name': 'test.txt', '--port': 8080}")
     positional_args: List[str] = Field(default_factory=list, description="位置參數。請嚴格按照腳本要求的順序傳入。例如: ['input.csv', 'output.json']")
-    timeout_seconds: int = Field(default=30, ge=5, le=300, description="腳本執行的超時限制 (5~300秒)，預設為 30 秒")
+    timeout: int = Field(default=30, ge=5, le=300, description="腳本執行的超時限制 (5~300秒)，預設為 30 秒")
 
-    @field_validator('skill_name', 'script_name')
+    @field_validator('skill_name', 'file_path')
     @classmethod
     def validate_paths(cls, v: str, info) -> str:
         if "/" in v or "\\" in v or ".." in v:
@@ -453,13 +472,13 @@ class ScriptExecutorTool(BaseTool):
     def name(self) -> str: return "skill_script"
     @property
     def description(self) -> str: return "在安全隔離的環境下執行技能腳本，並回傳完整的標準輸出與錯誤日誌供 AI 解析。"
-    def execute(self, request: ScriptRunRequest, **kwargs: Any) -> str:
+    def execute(self, request: RunSkillScriptSchema, **kwargs: Any) -> str:
         skill_dir = self.skills_dir / request.skill_name
         if not skill_dir.is_dir(): return f"❌ 執行失敗：找不到技能 '{request.skill_name}'"
         
-        script_path = skill_dir / request.script_name
+        script_path = skill_dir / request.file_path
         if not script_path.is_file():
-            return f"❌ 執行失敗：在技能 '{request.skill_name}' 中找不到腳本 '{request.script_name}'"
+            return f"❌ 執行失敗：在技能 '{request.skill_name}' 中找不到腳本 '{request.file_path}'"
 
         try:
             self.file_validator.validate_script_extension(script_path)
@@ -502,7 +521,7 @@ class ScriptExecutorTool(BaseTool):
                 env=execution_env,
                 capture_output=True,
                 text=True,
-                timeout=request.timeout_seconds
+                timeout=request.timeout
             )
 
             if result.returncode == 0:
@@ -523,9 +542,9 @@ class ScriptExecutorTool(BaseTool):
                     f"💡 請分析上述錯誤訊息，修改你的參數後重新呼叫此工具。"
                 )
         except subprocess.TimeoutExpired:
-            return f"⏳ 執行超時：腳本運行超過了 {request.timeout_seconds} 秒已被強制終止。"
+            return f"⏳ 執行超時：腳本運行超過了 {request.timeout} 秒已被強制終止。"
         except PermissionError:
-            return f"🚫 權限不足：無法執行 {request.script_name}。請確認該檔案是否有執行權限 (chmod +x) 或副檔名是否正確支援。"
+            return f"🚫 權限不足：無法執行 {request.file_path}。請確認該檔案是否有執行權限 (chmod +x) 或副檔名是否正確支援。"
         except Exception as e:
             return f"💥 系統層級錯誤：無法啟動子進程。詳細資訊：{str(e)}"
 
@@ -561,10 +580,13 @@ class SkillMCPServer:
     def _init_tools(self) -> None:
         self.tools = [
             ScriptExecutorTool(self.settings.skills_dir, self.file_validator, self.settings.workspace_dir, self.settings.script_timeout),
-            FileReaderTool(self.settings.workspace_dir, self.file_validator),
-            FileWriterTool(self.settings.workspace_dir, self.file_validator),
-            FileEditorTool(self.settings.workspace_dir, self.file_validator)
+            FileReaderTool(self.settings.workspace_dir, self.file_validator)
         ]
+        if self.settings.enable_file_write:
+            self.tools.append(FileWriterTool(self.settings.workspace_dir, self.file_validator))
+        if self.settings.enable_file_edit:
+            self.tools.append(FileEditorTool(self.settings.workspace_dir, self.file_validator))
+            
         self.registry.register_many(self.tools)
 
     def _init_mcp_server(self) -> None:
@@ -573,19 +595,23 @@ class SkillMCPServer:
         f_writer = self.registry.get("file_write")
         f_editor = self.registry.get("file_edit")
 
-        @self.mcp.tool(name=executor.name, description=executor.description)
-        def skill_script(request: ScriptRunRequest) -> str:
-            return executor.execute(request=request)
+        if executor:
+            @self.mcp.tool(name=executor.name, description=executor.description)
+            def skill_script(request: RunSkillScriptSchema) -> str:
+                return executor.execute(request=request)
 
-        @self.mcp.tool(name=f_reader.name, description=f_reader.description)
-        def file_read(path: str) -> str: return f_reader.execute(path=path)
+        if f_reader:
+            @self.mcp.tool(name=f_reader.name, description=f_reader.description)
+            def file_read(path: str) -> str: return f_reader.execute(path=path)
 
-        @self.mcp.tool(name=f_writer.name, description=f_writer.description)
-        def file_write(path: str, content: str) -> str: return f_writer.execute(path=path, content=content)
+        if f_writer:
+            @self.mcp.tool(name=f_writer.name, description=f_writer.description)
+            def file_write(path: str, content: str) -> str: return f_writer.execute(path=path, content=content)
 
-        @self.mcp.tool(name=f_editor.name, description=f_editor.description)
-        def file_edit(path: str, edits: list[dict[str, Any]]) -> str:
-            return f_editor.execute(path=path, edits=edits)
+        if f_editor:
+            @self.mcp.tool(name=f_editor.name, description=f_editor.description)
+            def file_edit(path: str, edits: list[dict[str, Any]]) -> str:
+                return f_editor.execute(path=path, edits=edits)
 
     async def run(self) -> None:
         get_logger().info("Starting Skill MCP Server (stdio)...")
@@ -600,9 +626,17 @@ class SkillMCPServer:
         config = uvicorn.Config(app, host=host, port=port, log_level="info")
         await uvicorn.Server(config).serve()
 
-def create_server(skills_dir=None, workspace_dir=None, verbose=False) -> SkillMCPServer:
+def create_server(skills_dir=None, workspace_dir=None, verbose=False, 
+                  enable_file_write: Optional[bool] = None, 
+                  enable_file_edit: Optional[bool] = None) -> SkillMCPServer:
     setup_logging(verbose=verbose)
-    settings = load_config(skills_dir=skills_dir, workspace_dir=workspace_dir, verbose=verbose)
+    settings = load_config(
+        skills_dir=skills_dir, 
+        workspace_dir=workspace_dir, 
+        verbose=verbose,
+        enable_file_write=enable_file_write,
+        enable_file_edit=enable_file_edit
+    )
     return SkillMCPServer(settings)
 
 # --- CLI ---
@@ -612,6 +646,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--skills-dir", type=str, default=None, help="Directory containing skill folders")
     parser.add_argument("--workspace", type=str, default=None, help="Working directory for file operations")
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose logging")
+    
+    # Tool enablement
+    parser.add_argument("--disable-write", action="store_true", help="Disable file_write tool")
+    parser.add_argument("--disable-edit", action="store_true", help="Disable file_edit tool")
+    
     parser.add_argument("--version", action="version", version="0.1.0")
     return parser.parse_args()
 
@@ -621,7 +660,9 @@ def main() -> int:
         server = create_server(
             skills_dir=Path(args.skills_dir) if args.skills_dir else None,
             workspace_dir=Path(args.workspace) if args.workspace else None,
-            verbose=args.verbose
+            verbose=args.verbose,
+            enable_file_write=not args.disable_write,
+            enable_file_edit=not args.disable_edit
         )
         asyncio.run(server.run())
         return 0

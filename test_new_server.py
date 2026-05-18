@@ -2,7 +2,7 @@ import asyncio
 import os
 import shutil
 from pathlib import Path
-from my_skill_server import create_server, ScriptRunRequest
+from new_skill_server import create_server, RunSkillScriptSchema
 
 # 測試用的路徑
 TEST_ROOT = Path("test_env").resolve()
@@ -57,9 +57,9 @@ async def test_script_execution(server):
     executor = server.registry.get("skill_script")
     
     # 建立 Request
-    request = ScriptRunRequest(
+    request = RunSkillScriptSchema(
         skill_name="test-skill",
-        script_name="scripts/hello.py",
+        file_path="scripts/hello.py",
         positional_args=["Jason"]
     )
     
