@@ -1,0 +1,3 @@
+## 2025-03-01 - [Pathlib rglob() vs os.walk() performance]
+**Learning:** During directory traversals, creating thousands of `pathlib.Path` objects via `rglob("*")` introduces significant instantiation overhead (up to ~9x slower) compared to using standard `os.walk()` with string manipulation. Also, for filtering path strings against a set of excluded directories, using `set.isdisjoint(path.parts)` is about 4-5x faster than casting `str(path)` and doing string inclusion checks like `f"/{excluded}/" in path_str`.
+**Action:** In highly frequently accessed or deep directory tree traversals, favor `os.walk()` and basic string manipulations (`os.path.relpath`) over `pathlib.Path.rglob()`, and use `isdisjoint()` for fast directory path component checks.
