@@ -106,15 +106,14 @@ class SkillScanner:
         Returns:
             True if the path should be excluded.
         """
-        path_str = str(path)
+        parts = path.parts
 
         # Check for excluded directories in path
-        for excluded in self.EXCLUDED_DIRS:
-            if f"/{excluded}/" in path_str or path_str.endswith(f"/{excluded}"):
-                return True
+        if not self.EXCLUDED_DIRS.isdisjoint(parts):
+            return True
 
         # Skip hidden files/directories
-        for part in path.parts:
+        for part in parts:
             if part.startswith(".") and part not in (".", ".."):
                 return True
 
