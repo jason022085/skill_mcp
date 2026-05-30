@@ -37,9 +37,7 @@ def extract_description(content: str, max_length: int = 100) -> str:
             continue
 
         # Skip list markers at the start (but keep the content)
-        if line.startswith(("- ", "* ", "+ ")):
-            line = line[2:].strip()
-        elif len(line) > 2 and line[0].isdigit() and line[1] in (".", ")"):
+        if line.startswith(("- ", "* ", "+ ")) or len(line) > 2 and line[0].isdigit() and line[1] in (".", ")"):
             line = line[2:].strip()
 
         # Found a content line
