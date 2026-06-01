@@ -5,8 +5,10 @@
 
 from __future__ import annotations
 
+import os
+import re
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Iterator
 
 from ..config.defaults import SKILL_SCAN_PATTERNS
 from ..utils.logging import get_logger
@@ -64,21 +66,62 @@ class SkillScanner:
             return
 
         seen: set[Path] = set()
+        dir_str = str(directory)
 
+        # Precompile regexes for glob patterns to handle ** correctly
+        regexes = []
         for pattern in self.patterns:
-            for path in directory.glob(pattern):
-                # Skip excluded directories
-                if self._is_excluded(path):
-                    continue
+            res = []
+            i = 0
+            n = len(pattern)
+            while i < n:
+                if pattern[i : i + 3] == "**/":
+                    res.append("(?:.*/)?")
+                    i += 3
+                elif pattern[i : i + 2] == "**":
+                    res.append(".*")
+                    i += 2
+                elif pattern[i] == "*":
+                    res.append("[^/]*")
+                    i += 1
+                elif pattern[i] == "?":
+                    res.append("[^/]")
+                    i += 1
+                elif pattern[i] in "[]()|^$.+{}":
+                    res.append("\\" + pattern[i])
+                    i += 1
+                else:
+                    res.append(pattern[i])
+                    i += 1
+            regexes.append(re.compile("^" + "".join(res) + "$"))
 
-                # Resolve to absolute and deduplicate
-                abs_path = path.resolve()
-                if abs_path in seen:
-                    continue
+        # Use os.walk to allow in-place pruning of excluded directories,
+        # dramatically improving performance over Path.glob which traverses everything first.
+        for root, dirs, files in os.walk(dir_str):
+            # Prune excluded and hidden directories in-place
+            dirs[:] = [d for d in dirs if d not in self.EXCLUDED_DIRS and not d.startswith(".")]
 
-                seen.add(abs_path)
-                logger.debug(f"Found skill file: {abs_path}")
-                yield abs_path
+            for file in files:
+                abs_path = os.path.join(root, file)
+                # Safely compute relative path
+                rel_path = os.path.relpath(abs_path, dir_str)
+
+                # Normalize separators for regex matching
+                rel_path = rel_path.replace(os.sep, "/")
+
+                # Check if the relative path matches any of our glob patterns
+                matched = False
+                for regex in regexes:
+                    if regex.match(rel_path):
+                        matched = True
+                        break
+
+                if matched:
+                    p = Path(abs_path).resolve()
+                    if p not in seen:
+                        seen.add(p)
+                        logger.debug(f"Found skill file: {p}")
+                        yield p
 
     def scan_multiple(self, directories: list[Path]) -> Iterator[Path]:
         """Scan multiple directories for skill files.
@@ -114,11 +157,7 @@ class SkillScanner:
                 return True
 
         # Skip hidden files/directories
-        for part in path.parts:
-            if part.startswith(".") and part not in (".", ".."):
-                return True
-
-        return False
+        return any(part.startswith(".") and part not in (".", "..") for part in path.parts)
 
     def count_skills(self, directory: Path) -> int:
         """Count the number of skills in a directory.
