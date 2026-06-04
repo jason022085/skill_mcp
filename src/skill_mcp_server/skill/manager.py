@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
 
 from ..config.defaults import RESOURCE_DIRS, SKILL_SCAN_PATTERNS
 from ..utils.logging import get_logger
@@ -27,8 +26,8 @@ class SkillManager:
 
     def __init__(
         self,
-        skill_dirs: Optional[list[Path]] = None,
-        scan_patterns: Optional[tuple[str, ...]] = None,
+        skill_dirs: list[Path] | None = None,
+        scan_patterns: tuple[str, ...] | None = None,
         resource_dirs: tuple[str, ...] = RESOURCE_DIRS,
     ) -> None:
         """Initialize the skill manager.
@@ -101,7 +100,7 @@ class SkillManager:
             except SkillParseError as e:
                 logger.error(f"Failed to parse skill: {e}")
 
-    def get(self, name: str) -> Optional[SkillInfo]:
+    def get(self, name: str) -> SkillInfo | None:
         """Get a skill by name.
 
         Args:
@@ -182,31 +181,54 @@ class SkillManager:
         Returns:
             Tuple of (resource_paths, script_paths).
         """
+        import os
+
         resources: list[str] = []
         scripts: list[str] = []
 
         base_dir = skill.base_dir
+        base_dir_str = str(base_dir)
+
+        # ⚡ Bolt Optimization: Use os.walk instead of rglob for O(n) directory traversal
+        # pathlib's rglob traverses excluded/hidden directories entirely before filtering,
+        # which is extremely slow for deep trees like node_modules or .git.
+        # os.walk allows in-place directory pruning to avoid traversing them at all.
+        excluded_dirs = {"__pycache__", "node_modules", ".venv", "venv", ".env"}
 
         # Scan resource directories
         for dir_name in self.resource_dirs:
             resource_dir = base_dir / dir_name
             if resource_dir.exists() and resource_dir.is_dir():
-                for file_path in resource_dir.rglob("*"):
-                    if file_path.is_file() and not file_path.name.startswith("."):
-                        rel_path = file_path.relative_to(base_dir)
-                        resources.append(str(rel_path))
+                for root, dirs, files in os.walk(str(resource_dir)):
+                    # Prune excluded and hidden directories in-place
+                    dirs[:] = [d for d in dirs if not d.startswith(".") and d not in excluded_dirs]
+
+                    for file in files:
+                        if not file.startswith("."):
+                            file_path = os.path.join(root, file)
+                            rel_path = os.path.relpath(file_path, base_dir_str)
+                            # Convert back to string with forward slashes for cross-platform consistency
+                            resources.append(rel_path.replace(os.sep, "/"))
 
         # Scan scripts directory
         scripts_dir = base_dir / "scripts"
         if scripts_dir.exists() and scripts_dir.is_dir():
             from ..config.defaults import ALLOWED_SCRIPT_EXTENSIONS
 
-            for file_path in scripts_dir.rglob("*"):
-                if file_path.is_file() and not file_path.name.startswith("."):
-                    rel_path = file_path.relative_to(base_dir)
-                    if file_path.suffix.lower() in ALLOWED_SCRIPT_EXTENSIONS:
-                        scripts.append(str(rel_path))
-                    else:
-                        resources.append(str(rel_path))
+            for root, dirs, files in os.walk(str(scripts_dir)):
+                # Prune excluded and hidden directories in-place
+                dirs[:] = [d for d in dirs if not d.startswith(".") and d not in excluded_dirs]
+
+                for file in files:
+                    if not file.startswith("."):
+                        file_path = os.path.join(root, file)
+                        rel_path = os.path.relpath(file_path, base_dir_str)
+                        rel_path_str = rel_path.replace(os.sep, "/")
+
+                        _, ext = os.path.splitext(file)
+                        if ext.lower() in ALLOWED_SCRIPT_EXTENSIONS:
+                            scripts.append(rel_path_str)
+                        else:
+                            resources.append(rel_path_str)
 
         return sorted(resources), sorted(scripts)
