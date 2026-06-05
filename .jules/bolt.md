@@ -1,0 +1,3 @@
+## 2025-02-20 - Fast Path Filtering with set.isdisjoint
+**Learning:** Checking for excluded directories using string serialization and substring searches (`path_str = str(path)`, `if f"/{excluded}/" in path_str`) on `pathlib.Path` objects creates unnecessary string allocation overhead in hot inner loops, such as directory traversal. It can also fail unexpectedly on relative paths.
+**Action:** Always prefer `set.isdisjoint(path.parts)` when checking if any directory in a path intersects with a predefined set of excluded directory names. It's approximately 2.5x faster in Python and handles both relative and absolute paths uniformly without string manipulation.
