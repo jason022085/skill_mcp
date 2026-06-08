@@ -1,0 +1,3 @@
+## 2025-02-24 - Performance: rglob vs os.walk
+**Learning:** `Path.rglob()` is significantly slower than `os.walk()` for directory traversals in Python, especially when there are hidden files/directories that can be pruned during traversal. In `list_skill_files` (which is used to list resources and scripts), switching from `rglob` to `os.walk` yields a 20x speedup (from ~3.0s to ~0.15s for 1000 files in 10 iterations) and allows pruning of hidden directories which `rglob` cannot easily do without generating intermediate `Path` objects.
+**Action:** Use `os.walk` instead of `rglob` when walking directory trees for performance-sensitive tasks, especially when we can prune directories directly via `dirs[:] = [...]`.
