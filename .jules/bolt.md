@@ -1,0 +1,6 @@
+## 2023-10-27 - [Path exclusion optimization in SkillScanner]
+**Learning:** In deeply nested directory scanning, the string conversion and multiple substring checks on every path component in `SkillScanner._is_excluded` is a significant performance bottleneck.
+**Action:** Replaced string-based exclusion checks with O(1) subset checks using `set.isdisjoint(path.parts)` on `pathlib.Path` objects. This avoids costly string conversions and repeated substring searching, significantly speeding up file discovery.
+## 2025-02-12 - [O(1) Set Intersections for Path Exclusion]
+**Learning:** In deeply nested directory scanning, the string conversion and multiple substring checks on every path component in `SkillScanner._is_excluded` is a significant performance bottleneck. While iterating over paths, using `path_str = str(path)` and multiple `"substring" in path_str` or `path_str.endswith("...")` commands for excluding common node/environment directories creates overhead on every file scan.
+**Action:** Replaced string-based exclusion checks with O(1) subset checks using `set.isdisjoint(path.parts)` on `pathlib.Path` objects against a frozen set of excluded directory names. This avoids costly string conversions and repeated substring searching, significantly speeding up file discovery.
