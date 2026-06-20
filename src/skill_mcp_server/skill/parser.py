@@ -143,14 +143,12 @@ class SkillParser:
         if base_dir is None:
             return None
 
-        try:
-            rel_path = path.relative_to(base_dir)
+        if path.is_relative_to(base_dir):
             # Get all parts except the filename and immediate parent (skill name)
-            parts = rel_path.parts[:-2]  # Remove filename and skill directory
+            # len(base_dir.parts) skips the base directory parts
+            parts = path.parts[len(base_dir.parts):-2]
             if parts:
                 return "/".join(parts)
-        except ValueError:
-            pass
 
         return None
 
@@ -169,9 +167,8 @@ class SkillParser:
         if path.name != self.skill_filename:
             return False
 
-        # Check for hidden files or __pycache__
-        path_str = str(path)
-        if "__pycache__" in path_str or "/.git" in path_str:
+        # Check for hidden files or __pycache__ using path parts
+        if "__pycache__" in path.parts or ".git" in path.parts:
             return False
 
         return True
