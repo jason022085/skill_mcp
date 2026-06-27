@@ -5,8 +5,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Iterator
 
 from ..config.defaults import SKILL_SCAN_PATTERNS
 from ..utils.logging import get_logger
@@ -106,11 +106,15 @@ class SkillScanner:
         Returns:
             True if the path should be excluded.
         """
+        # Bolt: Fast-path O(1) exclusion check using set intersection on path parts
+        if not self.EXCLUDED_DIRS.isdisjoint(path.parts):
+            return True
+
         path_str = str(path)
 
-        # Check for excluded directories in path
+        # Bolt: Fallback for complex excluded directories containing slashes
         for excluded in self.EXCLUDED_DIRS:
-            if f"/{excluded}/" in path_str or path_str.endswith(f"/{excluded}"):
+            if "/" in excluded and (f"/{excluded}/" in path_str or path_str.endswith(f"/{excluded}")):
                 return True
 
         # Skip hidden files/directories
