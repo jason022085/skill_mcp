@@ -63,11 +63,7 @@ class PathValidator:
         Returns:
             True if path is within base_dir, False otherwise.
         """
-        try:
-            path.resolve().relative_to(self.base_dir)
-            return True
-        except ValueError:
-            return False
+        return path.resolve().is_relative_to(self.base_dir)
 
     def validate_exists(self, relative_path: str) -> Path:
         """Validate a path and ensure it exists.
