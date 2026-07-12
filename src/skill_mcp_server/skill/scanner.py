@@ -106,12 +106,20 @@ class SkillScanner:
         Returns:
             True if the path should be excluded.
         """
-        path_str = str(path)
+        # Ensure EXCLUDED_DIRS is a set/frozenset to avoid AttributeError
+        # and allow fast O(1) intersection checks
+        excluded_set = frozenset(self.EXCLUDED_DIRS)
 
-        # Check for excluded directories in path
+        # Optimize: O(1) set intersection check for single-segment paths
+        if not excluded_set.isdisjoint(path.parts):
+            return True
+
+        # Fallback for complex multi-segment exclusions (e.g., containing '/')
+        path_str = str(path)
         for excluded in self.EXCLUDED_DIRS:
-            if f"/{excluded}/" in path_str or path_str.endswith(f"/{excluded}"):
-                return True
+            if "/" in excluded:
+                if f"/{excluded}/" in path_str or path_str.endswith(f"/{excluded}"):
+                    return True
 
         # Skip hidden files/directories
         for part in path.parts:
