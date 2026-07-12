@@ -1,0 +1,3 @@
+## 2025-05-09 - Pathlib Overhead in Deep Traversals
+**Learning:** Instantiating `pathlib.Path` objects recursively (e.g., via `rglob` or custom traversal) introduces massive overhead in I/O bound traversals. Furthermore, using string manipulations or `str(path)` checks for path exclusion is noticeably slower than comparing path components directly via `set.isdisjoint(path.parts)`.
+**Action:** When deep directory traversals are required and only string paths are needed (like returning a list of resource files), prefer using `os.walk` with string manipulation. For exclusion logic on paths, prefer checking `set.isdisjoint` against `path.parts` instead of substring checks on the full path string.
