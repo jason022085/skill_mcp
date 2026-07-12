@@ -5,8 +5,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Iterator
 
 from ..config.defaults import SKILL_SCAN_PATTERNS
 from ..utils.logging import get_logger
