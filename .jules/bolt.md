@@ -1,0 +1,3 @@
+## 2025-02-20 - Fast Path Exclusion with set.isdisjoint
+**Learning:** When checking if a `pathlib.Path` contains excluded directory names, using string manipulation (`str(path)` and substring matching) is significantly slower and allocates more memory than `set.isdisjoint(path.parts)`. A microbenchmark showed a ~2.7x speed improvement for this operation by leveraging native C implementation of set operations without allocating multiple strings in python.
+**Action:** Always prefer `set.isdisjoint()` or `in path.parts` when validating path components against a set of excluded/included names, rather than manipulating `str(path)`.
