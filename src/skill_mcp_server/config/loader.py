@@ -7,14 +7,13 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Optional
 
 from .settings import Settings
 
 
 def load_config(
-    skills_dir: Optional[Path] = None,
-    workspace_dir: Optional[Path] = None,
+    skills_dir: Path | None = None,
+    workspace_dir: Path | None = None,
     verbose: bool = False,
 ) -> Settings:
     """Load configuration with environment variable overrides.
