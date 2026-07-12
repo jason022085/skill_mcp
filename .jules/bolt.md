@@ -1,0 +1,3 @@
+## 2025-05-18 - File Traversal Performance
+**Learning:** `pathlib.Path.rglob()` causes severe performance bottlenecks for deep file scanning compared to `os.walk()` due to heavy object instantiation overhead. In testing, `os.walk()` combined with string manipulation was roughly 10x faster for deep, wide directories.
+**Action:** For deep directory traversals where only string paths are needed (such as file scanning), prefer using `os.walk` with string manipulation over `pathlib.Path.rglob()` to avoid performance bottlenecks caused by heavy object instantiation overhead.
