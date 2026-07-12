@@ -1,0 +1,3 @@
+## 2024-05-18 - pathlib.Path.glob() traversal overhead
+**Learning:** `pathlib.Path.glob()` can be an extreme performance bottleneck in deeply nested directory structures because it visits all subdirectories before applying matching/filtering logic. Even if you filter out large directories (like `node_modules` or `.venv`) after the glob yields them, the system IO cost of traversing them is already paid.
+**Action:** For recursive file discovery, especially when directory pruning is needed, use `os.walk` and prune directories in-place (`dirs[:] = [...]`) to prevent traversing excluded subdirectories entirely. Then check each file path against glob patterns (translated via `PurePath.match` or `fnmatch`).
