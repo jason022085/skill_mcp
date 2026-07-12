@@ -106,19 +106,13 @@ class SkillScanner:
         Returns:
             True if the path should be excluded.
         """
-        path_str = str(path)
+        # Optimize: 1. check EXCLUDED_DIRS intersection with path.parts in O(1)
+        parts = path.parts
+        if not self.EXCLUDED_DIRS.isdisjoint(parts):
+            return True
 
-        # Check for excluded directories in path
-        for excluded in self.EXCLUDED_DIRS:
-            if f"/{excluded}/" in path_str or path_str.endswith(f"/{excluded}"):
-                return True
-
-        # Skip hidden files/directories
-        for part in path.parts:
-            if part.startswith(".") and part not in (".", ".."):
-                return True
-
-        return False
+        # Optimize: 2. Skip hidden files/directories
+        return any(part.startswith(".") and part not in (".", "..") for part in parts)
 
     def count_skills(self, directory: Path) -> int:
         """Count the number of skills in a directory.
