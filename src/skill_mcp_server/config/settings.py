@@ -7,7 +7,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
 
 from .defaults import (
     ALLOWED_FILE_EXTENSIONS,
@@ -83,8 +82,8 @@ class Settings:
     @classmethod
     def from_args(
         cls,
-        skills_dir: Optional[Path] = None,
-        workspace_dir: Optional[Path] = None,
+        skills_dir: Path | None = None,
+        workspace_dir: Path | None = None,
         verbose: bool = False,
     ) -> Settings:
         """Create Settings from command-line arguments.

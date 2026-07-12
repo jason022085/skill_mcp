@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
 
 
 class PathValidationError(Exception):
@@ -63,11 +62,8 @@ class PathValidator:
         Returns:
             True if path is within base_dir, False otherwise.
         """
-        try:
-            path.resolve().relative_to(self.base_dir)
-            return True
-        except ValueError:
-            return False
+        # Bolt: Use is_relative_to for O(1) path bounds checking without exception overhead
+        return path.resolve().is_relative_to(self.base_dir)
 
     def validate_exists(self, relative_path: str) -> Path:
         """Validate a path and ensure it exists.
