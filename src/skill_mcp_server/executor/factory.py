@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
 
 from ..config.defaults import SCRIPT_TIMEOUT
 from .base import BaseExecutor, ExecutionError
@@ -47,7 +46,7 @@ class ExecutorFactory:
         """
         self._executors.append(executor)
 
-    def get_executor(self, path: Path) -> Optional[BaseExecutor]:
+    def get_executor(self, path: Path) -> BaseExecutor | None:
         """Get an executor that can handle the given file.
 
         Args:
@@ -85,7 +84,7 @@ class ExecutorFactory:
 
 
 # Global factory instance
-_factory: Optional[ExecutorFactory] = None
+_factory: ExecutorFactory | None = None
 
 
 def get_executor_factory(timeout: int = SCRIPT_TIMEOUT) -> ExecutorFactory:
