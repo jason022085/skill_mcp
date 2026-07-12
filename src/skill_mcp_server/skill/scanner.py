@@ -106,14 +106,13 @@ class SkillScanner:
         Returns:
             True if the path should be excluded.
         """
-        path_str = str(path)
+        # PERFORMANCE: Use set.isdisjoint for faster O(P) path part checking (where P is path length)
+        # instead of O(N * S) string operations across all excluded dirs.
+        if not self.EXCLUDED_DIRS.isdisjoint(path.parts):
+            return True
 
-        # Check for excluded directories in path
-        for excluded in self.EXCLUDED_DIRS:
-            if f"/{excluded}/" in path_str or path_str.endswith(f"/{excluded}"):
-                return True
-
-        # Skip hidden files/directories
+        # PERFORMANCE: A basic for loop is faster than any() with a generator expression in CPython
+        # due to generator creation overhead. (Ignoring SIM110)
         for part in path.parts:
             if part.startswith(".") and part not in (".", ".."):
                 return True
