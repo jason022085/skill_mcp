@@ -1,0 +1,3 @@
+## 2025-05-27 - [Path exclusion logic optimization]
+**Learning:** For path-based filtering or exclusion logic using `pathlib.Path`, using `set.isdisjoint(path.parts)` for subset checks is significantly faster than performing substring checks on `str(path)`, and it prevents bugs where relative paths may fail on string filtering. Additionally, in performance-critical paths, basic `for` loops are demonstrably faster in CPython than `any()` generator expressions due to the lack of generator creation overhead, despite linter recommendations like `SIM110`.
+**Action:** Always prefer `isdisjoint` for path part exclusion and stick to basic `for` loops rather than using `any()` generators in hot paths.
