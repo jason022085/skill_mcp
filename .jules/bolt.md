@@ -1,0 +1,3 @@
+## 2025-06-09 - [Performance Optimization: Fast directory exclusion checks]
+**Learning:** Checking for excluded paths using `f"/{excluded}/" in path_str` iterates over a list of exclusions and does string scanning, which scales poorly during deep directory traversals in `Path.glob()`. Converting `path.parts` to a set check via `EXCLUDED_DIRS.isdisjoint(path.parts)` is an O(1) hash map lookup and demonstrably faster.
+**Action:** Replace string matching for path segment validation with set intersections (`set.isdisjoint`) whenever checking directory inclusion/exclusion against a predefined list of disallowed directory names.
