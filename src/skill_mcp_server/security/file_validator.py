@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
 
 from ..config.defaults import (
     ALLOWED_FILE_EXTENSIONS,
@@ -115,10 +114,7 @@ class FileValidator:
         Raises:
             FileValidationError: If the content is too large.
         """
-        if isinstance(content, str):
-            content_size = len(content.encode("utf-8"))
-        else:
-            content_size = len(content)
+        content_size = len(content.encode("utf-8")) if isinstance(content, str) else len(content)
 
         if content_size > self.max_file_size:
             raise FileValidationError(
@@ -171,10 +167,10 @@ class FileValidator:
 
 
 def create_file_validator(
-    allowed_extensions: Optional[frozenset[str]] = None,
-    allowed_script_extensions: Optional[frozenset[str]] = None,
-    max_file_size: Optional[int] = None,
-    max_read_size: Optional[int] = None,
+    allowed_extensions: frozenset[str] | None = None,
+    allowed_script_extensions: frozenset[str] | None = None,
+    max_file_size: int | None = None,
+    max_read_size: int | None = None,
 ) -> FileValidator:
     """Factory function to create a FileValidator with custom settings.
 

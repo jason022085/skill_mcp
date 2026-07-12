@@ -100,11 +100,10 @@ def _unquote(value: str) -> str:
     Returns:
         String with quotes removed.
     """
-    if len(value) >= 2:
-        if (value.startswith('"') and value.endswith('"')) or (
-            value.startswith("'") and value.endswith("'")
-        ):
-            return value[1:-1]
+    if len(value) >= 2 and ((value.startswith('"') and value.endswith('"')) or (
+        value.startswith("'") and value.endswith("'")
+    )):
+        return value[1:-1]
     return value
 
 

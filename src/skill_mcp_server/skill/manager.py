@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
 
 from ..config.defaults import RESOURCE_DIRS, SKILL_SCAN_PATTERNS
 from ..utils.logging import get_logger
@@ -27,8 +26,8 @@ class SkillManager:
 
     def __init__(
         self,
-        skill_dirs: Optional[list[Path]] = None,
-        scan_patterns: Optional[tuple[str, ...]] = None,
+        skill_dirs: list[Path] | None = None,
+        scan_patterns: tuple[str, ...] | None = None,
         resource_dirs: tuple[str, ...] = RESOURCE_DIRS,
     ) -> None:
         """Initialize the skill manager.
@@ -101,7 +100,7 @@ class SkillManager:
             except SkillParseError as e:
                 logger.error(f"Failed to parse skill: {e}")
 
-    def get(self, name: str) -> Optional[SkillInfo]:
+    def get(self, name: str) -> SkillInfo | None:
         """Get a skill by name.
 
         Args:
