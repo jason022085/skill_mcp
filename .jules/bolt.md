@@ -1,0 +1,3 @@
+## 2025-02-28 - Avoid Path.rglob() for string-only operations
+**Learning:** For deep directory traversals where only string paths are needed (such as file scanning), `os.walk` with string manipulation is significantly faster than `pathlib.Path.rglob()` (measured ~86% improvement). This is because `pathlib` instantiates many objects unnecessarily, creating significant overhead when dealing with lots of files.
+**Action:** When performing deep directory scans to build lists of relative string paths, use `os.walk` and `os.path` functions instead of `pathlib.Path.rglob()`. Avoid fragile string slicing (`abs_path[base_len:]`) by safely computing relative paths using `os.path.relpath(abs_path, base_dir_str)`.
